@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:assignment/components/Components_page.dart';
+import 'package:assignment/components/Design_item.dart';
 import 'package:assignment/services/CheckFile.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
@@ -15,6 +16,7 @@ import 'package:http/http.dart' as http;
 import 'package:velocity_x/velocity_x.dart';
 
 import '../HomePage.dart';
+import 'checkPermissions.dart';
 
 class AllBooks extends StatefulWidget {
   String title;
@@ -26,6 +28,22 @@ class AllBooks extends StatefulWidget {
 }
 
 class _AllBooksState extends State<AllBooks> {
+
+  bool isPermission = false;
+  var chekAllPermission = CheckPermission();
+
+  checkPermission() async {
+    var Permission = await chekAllPermission.isStoragePermission();
+    if(Permission){
+      setState(() {
+        isPermission = true;
+      });
+    }
+  }
+
+
+
+
   bool isLoading = false;
   List<dynamic> chapterList = [];
 
@@ -54,27 +72,6 @@ class _AllBooksState extends State<AllBooks> {
     }
   }
 
-  // Download pdf function
-  Future<void> saveFile(String fileName) async {
-    var file = File('');
-
-    // Platform.isIOS comes from dart:io
-    if (Platform.isIOS) {
-      final dir = await getApplicationDocumentsDirectory();
-      file = File('${dir.path}/$fileName');
-    }
-    if (Platform.isAndroid) {
-      var status = await Permission.storage.status;
-      if (status != PermissionStatus.granted) {
-        status = await Permission.storage.request();
-      }
-      if (status.isGranted) {
-        const downloadsFolderPath = '/storage/emulated/0/Download/';
-        Directory dir = Directory(downloadsFolderPath);
-        file = File('${dir.path}/$fileName');
-      }
-    }
-  }
 
   //download pf]df
 
@@ -82,7 +79,7 @@ class _AllBooksState extends State<AllBooks> {
   void initState() {
     // TODO: implement initState
     super.initState();
-
+    checkPermission();
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
       await getBookChapterCall();
     });
@@ -96,7 +93,8 @@ class _AllBooksState extends State<AllBooks> {
         centerTitle: true,
         backgroundColor: Colors.blue,
       ),
-      body: SingleChildScrollView(
+      body:
+      SingleChildScrollView(
         child: Column(children: [
 
           isLoading
@@ -109,159 +107,14 @@ class _AllBooksState extends State<AllBooks> {
                     child: ListView.builder(
                         itemCount: chapterList.length,
                         itemBuilder: (context, index)  {
-                          bool offline=false;
-                          printtt(String s) async {
-                            print("hello");
-                          }
 
-                          String link = chapterList[index]["download_url"];
 
-                            WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
-                              offline=await CheckFile.checkFile(link);
-                              print("Checking File: $offline");
-
-                            });
-
-                          return Row(
-                            children: [
-                              Expanded(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 3, horizontal: 8),
-                                  // width: 340,
-                                  // width: double.infinity,
-                                  height: 85,
-                                  decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(21),
-                                      color: Colors.grey.shade200),
-                                  child: Column(
-                                    children: [
-                                      Text(chapterList[index]["title"] ??
-                                          "No Data"),
-                                      if(!offline)
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Expanded(
-                                            child: Padding(
-                                              padding:
-                                                  const EdgeInsets.all(2.0),
-                                              child: Container(
-                                                // width: 200,
-                                                height: 40,
-                                                decoration: BoxDecoration(
-                                                  borderRadius:
-                                                      BorderRadius.circular(21),
-                                                  color: Colors.green,
-                                                ),
-                                                child: Center(
-                                                    child: InkWell(
-                                                        onTap: () async {
-                                                          String link =
-                                                              chapterList[index]
-                                                                  [
-                                                                  "download_url"];
-                                                          if (!link.isEmpty) {
-                                                            String url = link;
-                                                            String filename =
-                                                                url
-                                                                    .split('/')
-                                                                    .last;
-
-                                                            final dir =
-                                                                await getApplicationDocumentsDirectory();
-                                                            String path =
-                                                                dir.path +
-                                                                    "/" +
-                                                                    filename;
-
-                                                            await Dio()
-                                                                .download(
-                                                                    url, path,
-                                                                    onReceiveProgress:
-                                                                        (count,
-                                                                            total) {},
-                                                                    deleteOnError:
-                                                                        true)
-                                                                .then((value) {
-                                                              context.showToast(
-                                                                  msg:
-                                                                      "Downloaded: $path");
-                                                              setState(() {});
-                                                              print(path);
-                                                            });
-                                                          } else {
-                                                            context.showToast(
-                                                                msg:
-                                                                    "Books not found for download");
-                                                          }
-                                                        },
-                                                        child: Text(
-                                                          "Download",
-                                                          style: TextStyle(
-                                                              color:
-                                                                  Colors.white),
-                                                        ))),
-                                              ),
-                                            ),
-                                          ),
-                                          Expanded(
-                                            child: Container(
-                                              // width: 150,
-                                              height: 40,
-                                              decoration: BoxDecoration(
-                                                borderRadius:
-                                                    BorderRadius.circular(21),
-                                                color: Colors.grey.shade500,
-                                              ),
-                                              child: Center(
-                                                  child: InkWell(
-                                                      onTap: () {
-                                                        Navigator.push(
-                                                            context,
-                                                            MaterialPageRoute(
-                                                              builder: (context) => PdfViewer(
-                                                                  pdfUrl: chapterList[
-                                                                          index]
-                                                                      [
-                                                                      "download_url"]),
-                                                            ));
-                                                      },
-                                                      child: Text(
-                                                        "Online",
-                                                        style: TextStyle(
-                                                            color:
-                                                                Colors.white),
-                                                      ))),
-                                            ),
-                                          )
-                                        ],
-                                      ),
-                                      if(offline)
-                                      Container(
-                                        height: 50,
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(30),
-                                          color: Colors.green,
-                                        ),
-
-                                        child: Center(
-                                          child: InkWell(
-                                            onTap: () {},
-                                            child: Text(
-                                              "Read Offline",
-                                              style: TextStyle(color: Colors.white),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              )
-                            ],
-                          );
+                          return ItemDesign(
+                              downloadUrl: chapterList[
+                              index]
+                              [
+                              "download_url"],
+                              tittel: chapterList[index]["title"]);
                         }),
                   ),
                 )

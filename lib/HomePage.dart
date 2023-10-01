@@ -1,10 +1,13 @@
+import 'dart:io';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 
 class PdfViewer extends StatefulWidget {
   String pdfUrl;
-   PdfViewer({ required this.pdfUrl,super.key});
+  bool isOffline;
+   PdfViewer({ required this.pdfUrl, required this.isOffline,super.key});
 
   @override
   State<PdfViewer> createState() => _PdfViewerState();
@@ -26,7 +29,14 @@ class _PdfViewerState extends State<PdfViewer> {
     return SafeArea(
       child:  Scaffold(
         backgroundColor: Colors.grey.shade500,
-        body: SfPdfViewer.network(widget.pdfUrl,
+        body: widget.isOffline?
+        SfPdfViewer.file(File(widget.pdfUrl),
+          key: _pdfViewerStateKey,
+          canShowScrollHead: false,
+          canShowScrollStatus: false,
+          controller: _controller,
+        )
+        :SfPdfViewer.network(widget.pdfUrl,
         key: _pdfViewerStateKey,
         canShowScrollHead: false,
         canShowScrollStatus: false,
